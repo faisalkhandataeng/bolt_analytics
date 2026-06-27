@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: stg_air_boltic__customers
+    description: Cleaned customer source table at one row per customer.
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: customer_group_id
+        description: Optional customer group reference. Null means individual customer.
+      - name: email
+        description: Nullable in the sample; should be monitored but not blocked until product makes it mandatory.
+
+  - name: stg_air_boltic__customer_groups
+    description: Cleaned customer group table at one row per group.
+    columns:
+      - name: customer_group_id
+        tests: [not_null, unique]
+      - name: customer_group_type
+        tests:
+          - accepted_values:
+              values: ['Company', 'Private Group', 'Organisation']
+
+  - name: stg_air_boltic__aeroplanes
+    description: Cleaned aircraft source table at one row per aircraft.
+    columns:
+      - name: aircraft_id
+        tests: [not_null, unique]
+      - name: aircraft_model_key
+        tests:
+          - relationships:
+              to: ref('stg_air_boltic__aeroplane_models')
+              field: aircraft_model_key
+
+  - name: stg_air_boltic__aeroplane_models
+    description: Flattened aircraft model metadata from the nested JSON file.
+    columns:
+      - name: aircraft_model_key
+        tests: [not_null, unique]
+      - name: max_seats
+        tests:
+          - not_null
+          - non_negative
+      - name: max_distance_km
+        tests:
+          - not_null
+          - non_negative
+
+  - name: stg_air_boltic__trips
+    description: Cleaned trip table at one row per scheduled ride.
+    tests:
+      - valid_time_order:
+          start_column: start_at_local
+          end_column: end_at_local
+          config:
+            severity: warn
+    columns:
+      - name: trip_id
+        tests: [not_null, unique]
+      - name: aircraft_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_air_boltic__aeroplanes')
+              field: aircraft_id
+
+  - name: stg_air_boltic__orders
+    description: Cleaned order table at one row per seat purchase.
+    columns:
+      - name: order_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_air_boltic__customers')
+              field: customer_id
+      - name: trip_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_air_boltic__trips')
+              field: trip_id
+      - name: price_eur
+        tests:
+          - not_null
+          - non_negative
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['FINISHED', 'BOOKED', 'CANCELLED']
+

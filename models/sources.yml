@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: air_boltic_raw
+    description: Raw Air Boltic application extracts landed in S3 and exposed through Databricks external tables.
+    database: hive_metastore
+    schema: raw_air_boltic
+    loaded_at_field: _ingested_at
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    tables:
+      - name: customer
+        description: Customers buying seats on Air Boltic trips.
+      - name: customer_group
+        description: Optional organisation or group associated with a customer.
+      - name: aeroplane
+        description: Individual aircraft operating on the platform.
+      - name: trip
+        description: Scheduled aeroplane rides between origin and destination cities.
+      - name: order
+        description: Seat-level customer purchases on trips.
+      - name: aeroplane_model
+        description: Flattened JSON metadata for aircraft model capabilities.
+

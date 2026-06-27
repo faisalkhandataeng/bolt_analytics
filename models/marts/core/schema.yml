@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: Customer dimension for customer, segment and group-level analysis.
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: customer_segment
+        description: Individual, known group type, or Unknown group when source reference is missing.
+
+  - name: dim_aircraft
+    description: Aircraft dimension enriched with manufacturer/model capabilities.
+    columns:
+      - name: aircraft_id
+        tests: [not_null, unique]
+      - name: max_seats
+        tests:
+          - not_null
+          - non_negative
+
+  - name: dim_route
+    description: Route dimension at origin city and destination city grain.
+    columns:
+      - name: route_id
+        tests: [not_null, unique]
+
+  - name: fct_orders
+    description: Seat-level fact table. Grain is one row per order/seat purchase.
+    columns:
+      - name: order_id
+        tests: [not_null, unique]
+      - name: price_eur
+        tests:
+          - not_null
+          - non_negative
+
+  - name: fct_trips
+    description: Trip-level fact table. Grain is one row per trip with booking, revenue and occupancy measures.
+    columns:
+      - name: trip_id
+        tests: [not_null, unique]
+      - name: booked_occupancy_rate
+        tests:
+          - percentage_between_zero_and_one:
+              config:
+                severity: warn
+
+  - name: mart_air_boltic_growth_metrics
+    description: Daily metric mart for Looker dashboards and business reviews.
+    columns:
+      - name: metric_date
+        tests: [not_null, unique]
+      - name: dau
+        description: Distinct customers with at least one booked or finished order on the service date.
+      - name: gross_booking_value_eur
+        description: Sum of Booked and Finished order prices; cancelled orders excluded.
+      - name: realized_revenue_eur
+        description: Sum of Finished order prices.
+      - name: cancellation_rate
+        tests:
+          - percentage_between_zero_and_one
+
